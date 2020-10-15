@@ -5,6 +5,15 @@
 
     GUID                 = '57e6bf56-e137-42a2-903a-27be1d2d51d0'
 
+    RequiredModules      = @(
+        @{
+            # Install from the PSGallery: Install-Module Configuration
+            # https://github.com/PoshCode/Configuration
+            ModuleName    = 'Configuration'
+            ModuleVersion = '1.3.1'
+        }
+    )
+
     Author               = 'Freddie Sackur'
     CompanyName          = 'DustyFox'
     Copyright            = '(c) 2020 Freddie Sackur. All rights reserved.'
