@@ -1,3 +1,4 @@
+using module ./PropertyList.psm1
 # Import at CLI:
 # using module Classes/Computer.psm1
 # Get-Content Classes/Computer.psm1 -Raw | Invoke-Expression   # to reimport
@@ -31,7 +32,22 @@ class Computer
         $Map = @{
             Properties = @{
                 XPath   = "BESAPI/Computer/Property"
-                Process = {[pscustomobject]@{Name = $_.Name; Value = $_.'#text'}}
+                Process = {
+                    param([Xml.XmlElement[]]$Node)
+                    $Node |
+                        ForEach-Object {[pscustomobject]@{Name = $_.Name; Value = $_.'#text'}} |
+                        Group-Object Name |
+                        ForEach-Object {
+                            if ($_.Count -gt 1)
+                            {
+                                [pscustomobject]@{Name = $_.Name; Value = [PropertyList]$_.Group.Value}
+                            }
+                            else
+                            {
+                                $_.Group
+                            }
+                        }
+                }
             }
             Settings   = "BESAPI/ComputerSettings/Setting"
             # Fixlets    = ""
@@ -89,10 +105,11 @@ class Computer
 
                 # Get
                 Value       = {
-                    $this._Xml |
+                    $Node = $this._Xml |
                         Select-Xml -XPath $Selector.XPath |
-                        Select-Object -ExpandProperty Node |
-                        ForEach-Object $Selector.Process
+                        Select-Object -ExpandProperty Node
+
+                    & $Selector.Process $Node
 
                 }.GetNewClosure()
 
