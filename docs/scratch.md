@@ -1,3 +1,8 @@
+## API ref
+
+https://developer.bigfix.com/rest-api/
+https://github.com/bigfix/
+
 ## We need a default config for server URI and how to fetch creds
 
 ``` powershell
