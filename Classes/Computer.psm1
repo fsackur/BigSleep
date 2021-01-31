@@ -2,19 +2,51 @@
 # using module Classes/Computer.psm1
 # Get-Content Classes/Computer.psm1 -Raw | Invoke-Expression   # to reimport
 
+class PropertySelector
+{
+    [string]$XPath
+    [scriptblock]$Process = { $_ }
+
+    PropertySelector([string]$XPath)
+    {
+        $this.XPath = $XPath
+    }
+
+    PropertySelector([Collections.IDictionary]$Properties)
+    {
+        foreach ($Kvp in $Properties.GetEnumerator())
+        {
+            $this.$($Kvp.Key) = $Kvp.Value
+        }
+    }
+}
+
+
 class Computer
 {
     hidden static [string] $_XPathBase = "BESAPI/Computer"
-    hidden static [Collections.IDictionary] $_PropertyMap = @{
-        Properties = "BESAPI/Computer/Property"
-        Settings   = "BESAPI/ComputerSettings/Setting"
-        # Fixlets    = ""
-        # Tasks      = ""
-        # Analyses   = ""
-        # Baselines  = ""
-        # Mailbox    = ""
-    }
+    hidden static [Collections.Generic.IDictionary[string, PropertySelector]] $_PropertyMap
+    static Computer()
+    {
+        $Map = @{
+            Properties = @{
+                XPath   = "BESAPI/Computer/Property"
+                Process = {[pscustomobject]@{Name = $_.Name; Value = $_.'#text'}}
+            }
+            Settings   = "BESAPI/ComputerSettings/Setting"
+            # Fixlets    = ""
+            # Tasks      = ""
+            # Analyses   = ""
+            # Baselines  = ""
+            # Mailbox    = ""
+        }
 
+        [Computer]::_PropertyMap = [Collections.Generic.Dictionary[string, PropertySelector]]::new()
+        foreach ($Kvp in $Map.GetEnumerator())
+        {
+            [Computer]::_PropertyMap.Add($Kvp.Key, $Kvp.Value)
+        }
+    }
 
     hidden [xml] $_Xml
 
@@ -46,19 +78,33 @@ class Computer
         foreach ($Kvp in [Computer]::_PropertyMap.GetEnumerator())
         {
             $PropertyName = $Kvp.Key
-            $Selector = $Kvp.Value
+            $Selector     = $Kvp.Value
+
+            # Don't needlessly add to closures
             Remove-Variable Kvp
 
-            $this | Add-Member ScriptProperty $PropertyName `
-                <# get #> `
-                -Value {
-                    $this._Xml | Select-Xml -XPath $Selector | Select-Object -ExpandProperty Node
-                }.GetNewClosure() `
-                `
-                <# set #> `
-                -SecondValue {
-                    throw [NotImplementedException]::new("Setter not implemented for '$PropertyName'.")
+            $Member = @{
+                Name        = $PropertyName
+                MemberType  = "ScriptProperty"
+
+                # Get
+                Value       = {
+                    $this._Xml |
+                        Select-Xml -XPath $Selector.XPath |
+                        Select-Object -ExpandProperty Node |
+                        ForEach-Object $Selector.Process
+
                 }.GetNewClosure()
+
+                # Set
+                SecondValue = {
+                    throw [NotImplementedException]::new(
+                        "Setter not implemented for '$PropertyName'."
+                    )
+                }.GetNewClosure()
+            }
+
+            $this | Add-Member @Member
         }
     }
 }
