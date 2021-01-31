@@ -36,6 +36,9 @@ $Sites = Invoke-BigfixRestMethod sites
 $Sites.BESAPI.OperatorSite | ? Name -eq $env:USERNAME
 
 
+https://developer.bigfix.com/rest-api/
+https://github.com/bigfix/
+
 
 # Building test lab
 
