@@ -5,7 +5,7 @@
 class PropertySelector
 {
     [string]$XPath
-    [scriptblock]$Process = { $_ }
+    [scriptblock]$Process = {$_}
 
     PropertySelector([string]$XPath)
     {
