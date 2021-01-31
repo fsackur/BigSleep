@@ -1,1 +1,5 @@
 *.xsd
+
+# Symlink dev_config to whatever `gmo BigSleep | Get-ConfigurationPath` tells you
+# easier to test config changes
+**/dev_config
